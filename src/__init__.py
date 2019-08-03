@@ -1,7 +1,8 @@
-# from models import Conversation
-
+import os
+from models import Conversation
 
 if __name__ == '__main__':
-    pass
-    # lines = clean_episode("./episodes/ba_01.txt")
-    # from IPython import embed; embed()
+    transcript_names = os.listdir(os.path.join('src', 'episodes'))
+    conversations = [Conversation(fpath) for fpath in transcript_names]
+    for convo in conversations:
+        convo.summarize()
