@@ -12,8 +12,8 @@ class Line:
         return f"<{self.speaker}: {words_summary}>"
 
     def word_count(self):
-        """Count the words inside of a line (ignoring punctuation)."""
-        return len(self.words.split())
+        """Count the words inside of a line."""
+        return len(self.words.replace("...", "").split())
 
 
 class Conversation:
@@ -58,3 +58,31 @@ class Conversation:
         if speaker:
             return len(self.lines_by(speaker))
         return len(self.lines)
+
+    def speakers(self):
+        """Return a set of the names of the speakers in the conversation."""
+        return set(line.speaker for line in self.lines)
+
+    def word_count(self, speaker=None):
+        """Return a count of the number of words in the conversation.
+        Can optionally pass a speaker to filter the count by.
+        """
+        if speaker:
+            return sum(line.word_count() for line in self.lines
+                       if line.speaker == speaker)
+        return sum(line.word_count() for line in self.lines)
+
+    def summarize(self):
+        total_wc = self.word_count()
+        speaker_info = [{
+            "name": speaker,
+            "word_count": self.word_count(speaker)
+        } for speaker in self.speakers()]
+        print(
+            self,
+            f"Line count: {self.line_count()}",
+            *(f"{sp['name']} word count: {sp['word_count']} ({sp['word_count'] / total_wc:.2%})"
+              for sp in speaker_info),
+            f"Total word count: {total_wc}",
+            sep='\n',
+            end='\n\n-----------\n\n')
