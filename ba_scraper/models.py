@@ -1,4 +1,7 @@
 import os
+from nltk.tokenize import sent_tokenize
+from numpy import mean, var
+from ba_scraper.helpers import analyzer
 
 
 class Line:
@@ -11,6 +14,18 @@ class Line:
             self.words) <= 97 else f"{self.words[:97]}..."
         return f"<{self.speaker}: {words_summary}>"
 
+    def avg_sentiment(self):
+        """Return the average compound sentiment for all sentences in the line."""
+        sentiments = self.sentiments()
+        return mean([sent['compound'] for sent in sentiments])
+
+    def sentiments(self):
+        """Perform sentiment analysis on all sentences in the words.
+        Returns a list of analyses, one for each sentence.
+        """
+        sentences = sent_tokenize(self.words)
+        return [analyzer.polarity_scores(sent) for sent in sentences]
+
     def word_count(self):
         """Count the words inside of a line."""
         return len(self.words.replace("...", "").split())
@@ -18,7 +33,7 @@ class Line:
 
 class Conversation:
     def __init__(self, filepath):
-        with open(os.path.join("src", "episodes", filepath)) as file:
+        with open(os.path.join("episodes", filepath)) as file:
             text_lines = file.readlines()
             self.id = int(text_lines[0].split(" ")[1])
             self.title = text_lines[1].strip()
@@ -59,6 +74,30 @@ class Conversation:
             return len(self.lines_by(speaker))
         return len(self.lines)
 
+    def sentiment_by_line(self, speaker=None):
+        """Return a list of sentiment analyses, one for each line in the conversation.
+        Optionally filter the sentiments by speaker"""
+        if speaker:
+            return [
+                line.sentiments() for line in self.lines
+                if line.speaker == speaker
+            ]
+        return [line.sentiments() for line in self.lines]
+
+    def sentiment_stats(self, speaker=None):
+        """Return the mean and variance for compound sentiment in the conversation,
+        optionally filtered by speaker."""
+        all_sentiments = [
+            sent_dict for sent in self.sentiment_by_line(speaker)
+            for sent_dict in sent
+        ]
+        return {
+            "compound_average":
+            mean([sent["compound"] for sent in all_sentiments]),
+            "compound_variance":
+            var([sent["compound"] for sent in all_sentiments])
+        }
+
     def speakers(self):
         """Return a set of the names of the speakers in the conversation."""
         return set(line.speaker for line in self.lines)
@@ -76,7 +115,8 @@ class Conversation:
         total_wc = self.word_count()
         speaker_info = [{
             "name": speaker,
-            "word_count": self.word_count(speaker)
+            "word_count": self.word_count(speaker),
+            "sentiment": self.sentiment_stats(speaker),
         } for speaker in self.speakers()]
         print(
             self,
@@ -84,5 +124,9 @@ class Conversation:
             *(f"{sp['name']} word count: {sp['word_count']} ({sp['word_count'] / total_wc:.2%})"
               for sp in speaker_info),
             f"Total word count: {total_wc}",
+            *(f"{sp['name']} compound average: {sp['sentiment']['compound_average']}"
+              for sp in speaker_info),
+            *(f"{sp['name']} compound variance: {sp['sentiment']['compound_variance']}"
+              for sp in speaker_info),
             sep='\n',
             end='\n\n-----------\n\n')
