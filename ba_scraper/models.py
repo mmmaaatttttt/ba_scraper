@@ -130,3 +130,8 @@ class Conversation:
               for sp in speaker_info),
             sep='\n',
             end='\n\n-----------\n\n')
+
+
+class ConversationList:
+    def __init__(self, filepaths):
+        self.conversations = [Conversation(fpath) for fpath in filepaths]

@@ -1,10 +1,10 @@
 import os
-from ba_scraper.models import Conversation
+from ba_scraper.models import ConversationList
 
 if __name__ == '__main__':
     transcript_names = os.listdir(os.path.join('episodes'))
-    conversations = [Conversation(fpath) for fpath in transcript_names]
-    for convo in conversations:
+    convo_list = ConversationList(transcript_names)
+    for convo in convo_list.conversations:
         convo.summarize()
 
 # generate random text in Chris voice (ML, all ep)
