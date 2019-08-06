@@ -10,6 +10,9 @@ if __name__ == '__main__':
 # generate random text in Chris voice (ML, all ep)
 # predictors for Chris vs guest (ML, all ep)
 # most common words / bigrams for speakers (esp chris) (all ep)
+    # 1 - 5 word phrases
+        # ignore stop words for 1
+        # sorry sally - 4 times for each
     # word clouds? https://vprusso.github.io/blog/2018/natural-language-processing-python-3/
 
 # sources

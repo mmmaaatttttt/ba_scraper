@@ -1,7 +1,8 @@
 import os
-from nltk.tokenize import sent_tokenize
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk import FreqDist, ngrams, Text
 from numpy import mean, var
-from ba_scraper.helpers import analyzer
+from ba_scraper.helpers import analyzer, lower_and_remove_punc
 
 
 class Line:
@@ -135,3 +136,37 @@ class Conversation:
 class ConversationList:
     def __init__(self, filepaths):
         self.conversations = [Conversation(fpath) for fpath in filepaths]
+
+    def all_lines(self, speaker):
+        """Get all lines from speaker across all conversations."""
+        return [
+            line for convo in self.conversations for line in convo.lines
+            if line.speaker == speaker
+        ]
+
+    def ngram_freq(self, speaker, token_count=1):
+        """Return a FreqDist of ngrams of length token_count for speaker."""
+        freq = FreqDist()
+        for line in self.all_lines(speaker):
+            for sent in sent_tokenize(line.words):
+                cleaned_tokens = word_tokenize(lower_and_remove_punc(sent))
+                freq.update(" ".join(ngram)
+                            for ngram in ngrams(cleaned_tokens, token_count))
+        return freq
+
+    def most_common_phrases(self, speaker, phrase_length, min_count_per_convo=1):
+        """Return a list of common phrases said by speaker of token length equal to phrase_length,
+        provided the phrase appears at least an average of min_count_per_convo number of times.
+        Defaults to an average of at least once per conversation."""
+        all_phrases = self.ngram_freq(speaker, phrase_length)
+        common_phrases = [
+            item for item in all_phrases.items()
+            if item[1] / len(self.conversations) >= min_count_per_convo
+        ]
+        common_phrases.sort(key=lambda t: t[1], reverse=True)
+        return common_phrases
+
+    def collocation_list(self, speaker):
+        all_lines_by_speaker = self.all_lines(speaker)
+        cleaned_string = lower_and_remove_punc(" ".join([line.words for line in all_lines_by_speaker]))
+        return Text(cleaned_string.split(" ")).collocation_list()
