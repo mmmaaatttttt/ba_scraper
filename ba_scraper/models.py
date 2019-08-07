@@ -1,8 +1,10 @@
 import os
+from random import shuffle
+from nltk import FreqDist, ngrams, Text, NaiveBayesClassifier
 from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk import FreqDist, ngrams, Text
+from nltk.classify import accuracy
 from numpy import mean, var
-from ba_scraper.helpers import analyzer, lower_and_remove_punc
+from ba_scraper.helpers import analyzer, lower_and_remove_punc, speaker_features
 
 
 class Line:
@@ -22,8 +24,7 @@ class Line:
 
     def sentiments(self):
         """Perform sentiment analysis on all sentences in the words.
-        Returns a list of analyses, one for each sentence.
-        """
+        Returns a list of analyses, one for each sentence."""
         sentences = sent_tokenize(self.words)
         return [analyzer.polarity_scores(sent) for sent in sentences]
 
@@ -154,7 +155,10 @@ class ConversationList:
                             for ngram in ngrams(cleaned_tokens, token_count))
         return freq
 
-    def most_common_phrases(self, speaker, phrase_length, min_count_per_convo=1):
+    def most_common_phrases(self,
+                            speaker,
+                            phrase_length,
+                            min_count_per_convo=1):
         """Return a list of common phrases said by speaker of token length equal to phrase_length,
         provided the phrase appears at least an average of min_count_per_convo number of times.
         Defaults to an average of at least once per conversation."""
@@ -168,5 +172,21 @@ class ConversationList:
 
     def collocation_list(self, speaker):
         all_lines_by_speaker = self.all_lines(speaker)
-        cleaned_string = lower_and_remove_punc(" ".join([line.words for line in all_lines_by_speaker]))
+        cleaned_string = lower_and_remove_punc(" ".join(
+            [line.words for line in all_lines_by_speaker]))
         return Text(cleaned_string.split(" ")).collocation_list()
+
+    def classifier_summary(self,
+                           speakers,
+                           test_size=500,
+                           features=speaker_features):
+        labeled_lines = []
+        for speaker in speakers:
+            labeled_lines.extend(self.all_lines(speaker))
+        shuffle(labeled_lines)
+        featuresets = [(speaker_features(line), line.speaker.lower())
+                       for line in labeled_lines]
+        train_set, test_set = featuresets[test_size:], featuresets[:test_size]
+        classifier = NaiveBayesClassifier.train(train_set)
+        classifier.show_most_informative_features(20)
+        print(accuracy(classifier, test_set))
