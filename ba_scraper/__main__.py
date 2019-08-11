@@ -5,9 +5,8 @@ if __name__ == '__main__':
     transcript_names = os.listdir(os.path.join('episodes'))
     convo_list = ConversationList(transcript_names)
     for convo in convo_list.conversations:
-        convo.summarize()
+        print(convo.summary_json())
 
-# generate random text in Chris voice (ML, all ep)
 # predictors for Chris vs guest (ML, all ep)
 # most common words / bigrams for speakers (esp chris) (all ep)
 # 1 - 5 word phrases

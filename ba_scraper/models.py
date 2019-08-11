@@ -1,4 +1,5 @@
 import os
+import json
 from random import shuffle
 from nltk import FreqDist, ngrams, Text, NaiveBayesClassifier
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -113,6 +114,19 @@ class Conversation:
                        if line.speaker == speaker)
         return sum(line.word_count() for line in self.lines)
 
+    def summary_json(self):
+        return json.dumps({
+            "id": self.id,
+            "title": self.title,
+            "date": self.date,
+            "word_counts": [
+                {
+                    "Chris": self.word_count("Chris"),
+                    "Caller": self.word_count("Caller")
+                }
+            ]
+        })
+
     def summarize(self):
         total_wc = self.word_count()
         speaker_info = [{
@@ -190,3 +204,9 @@ class ConversationList:
         classifier = NaiveBayesClassifier.train(train_set)
         classifier.show_most_informative_features(20)
         print(accuracy(classifier, test_set))
+
+    def write_lines_to_file(self, speaker):
+        """Write all words from speaker to a file. Useful for textgenrnn module."""
+        all_words = [line.words for line in self.all_lines(speaker)]
+        with open(f"{speaker}.txt", "w") as file:
+            file.write("\n".join(all_words))
