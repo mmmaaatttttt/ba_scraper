@@ -5,6 +5,7 @@ from nltk import FreqDist, ngrams, Text, NaiveBayesClassifier
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.classify import accuracy
 from numpy import mean, var
+from profanity_check import predict_prob, predict
 from ba_scraper.helpers import analyzer, lower_and_remove_punc, speaker_features
 
 
@@ -23,15 +24,34 @@ class Line:
         sentiments = self.sentiments()
         return mean([sent['compound'] for sent in sentiments])
 
+    def avg_profanity_prob(self):
+        """Return the average profanity probability for all sentences in a line."""
+        probs = self.profanity_probs()
+        return mean(probs)
+
     def sentiments(self):
         """Perform sentiment analysis on all sentences in the words.
         Returns a list of analyses, one for each sentence."""
         sentences = sent_tokenize(self.words)
         return [analyzer.polarity_scores(sent) for sent in sentences]
 
+    def profanity_probs(self):
+        """Return probabilities that each sentence within a line is profane."""
+        sentences = sent_tokenize(self.words)
+        return list(predict_prob(sentences))
+
+    def profanity_count(self):
+        """Return a count of the number of offensive sentences in a line."""
+        sentences = sent_tokenize(self.words)
+        return sum(predict(sentences))
+
     def word_count(self):
         """Count the words inside of a line."""
         return len(self.words.replace("...", "").split())
+
+    def sentence_count(self):
+        """Count the sentences inside of a line."""
+        return len(sent_tokenize(self.words))
 
 
 class Conversation:
@@ -67,7 +87,7 @@ class Conversation:
     def lines_by(self, speaker):
         """Return a list of all lines spoken by the given speaker."""
 
-        return [line.words for line in self.lines if line.speaker == speaker]
+        return [line for line in self.lines if line.speaker == speaker]
 
     def line_count(self, speaker=None):
         """Return a count of the number of lines in the conversation.
@@ -77,9 +97,41 @@ class Conversation:
             return len(self.lines_by(speaker))
         return len(self.lines)
 
+    def profanity_prob_by_line(self, speaker=None):
+        """Return a list of profanity probabilities, one for each sentence in the conversation.
+        Optionally filter the statements by speaker."""
+        if speaker:
+            return [
+                line.profanity_probs() for line in self.lines
+                if line.speaker == speaker
+            ]
+        return [line.profanity_probs() for line in self.lines]
+
+    def profanity_stats(self, speaker=None):
+        """Return the mean and variance for profanity probabilities in the conversation,
+        optionally filtered by speaker."""
+        all_probs = [
+            prob for prob_list in self.profanity_prob_by_line(speaker)
+            for prob in prob_list
+        ]
+
+        if speaker:
+            profane_sentences = sum(line.profanity_count() for line in self.lines_by(speaker))
+            all_sentences = sum(line.sentence_count() for line in self.lines_by(speaker))
+        else:
+            profane_sentences = sum(line.profanity_count() for line in self.lines)
+            all_sentences = sum(line.sentence_count() for line in self.lines)
+
+        return {
+            "profanity_prob_average": mean(all_probs),
+            "profanity_prob_variance": var(all_probs),
+            "profane_sentence_count": profane_sentences,
+            "all_sentence_count": all_sentences
+        }
+
     def sentiment_by_line(self, speaker=None):
         """Return a list of sentiment analyses, one for each line in the conversation.
-        Optionally filter the sentiments by speaker"""
+        Optionally filter the sentiments by speaker."""
         if speaker:
             return [
                 line.sentiments() for line in self.lines
@@ -116,15 +168,16 @@ class Conversation:
 
     def summary_json(self):
         return json.dumps({
-            "id": self.id,
-            "title": self.title,
-            "date": self.date,
-            "word_counts": [
-                {
-                    "Chris": self.word_count("Chris"),
-                    "Caller": self.word_count("Caller")
-                }
-            ]
+            "id":
+            self.id,
+            "title":
+            self.title,
+            "date":
+            self.date,
+            "word_counts": [{
+                "Chris": self.word_count("Chris"),
+                "Caller": self.word_count("Caller")
+            }]
         })
 
     def summarize(self):
