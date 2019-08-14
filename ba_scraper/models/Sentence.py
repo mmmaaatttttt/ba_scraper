@@ -22,10 +22,10 @@ class Sentence:
         self.words = words
         self.sentiment = analyzer.polarity_scores(self.words)["compound"]
         self.is_profane = bool(predict([self.words])[0])
-        self.probability_profane = bool(predict_prob([self.words])[0])
+        self.probability_profane = predict_prob([self.words])[0]
 
     def __repr__(self):
-        """Return repr for instance of sentence.
+        """repr for an instance of sentence.
 
         >>> sent = Sentence("Hello world!")
         >>> sent
