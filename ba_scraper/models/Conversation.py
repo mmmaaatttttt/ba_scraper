@@ -1,7 +1,7 @@
 import os
 import json
 from numpy import mean, var
-from models import Line
+from ba_scraper.models.Line import Line
 
 
 class Conversation:

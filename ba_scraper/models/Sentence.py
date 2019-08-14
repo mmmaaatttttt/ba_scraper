@@ -2,7 +2,7 @@ from string import punctuation
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import word_tokenize
 from profanity_check import predict_prob, predict
-from helpers import truncate
+from ba_scraper.helpers import truncate
 
 analyzer = SentimentIntensityAnalyzer()
 

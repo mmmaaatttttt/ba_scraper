@@ -1,7 +1,7 @@
 from random import shuffle
 from nltk import FreqDist, ngrams, Text, NaiveBayesClassifier
 from nltk.classify import accuracy
-from models import Conversation
+from ba_scraper.models.Conversation import Conversation
 
 
 class ConversationList:

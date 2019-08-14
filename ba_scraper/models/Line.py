@@ -1,6 +1,6 @@
 from nltk.tokenize import sent_tokenize
-from models import Sentence
-from helpers import truncate
+from ba_scraper.models.Sentence import Sentence
+from ba_scraper.helpers import truncate
 
 
 class Line:
