@@ -1,5 +1,5 @@
 import os
-from ba_scraper.models import ConversationList
+from ba_scraper.models.ConversationList import ConversationList
 
 if __name__ == '__main__':
     transcript_names = os.listdir(os.path.join('episodes'))

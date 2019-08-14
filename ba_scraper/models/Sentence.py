@@ -1,4 +1,6 @@
+from string import punctuation
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk.tokenize import word_tokenize
 from profanity_check import predict_prob, predict
 from helpers import truncate
 
@@ -25,11 +27,13 @@ class Sentence:
         self.probability_profane = predict_prob([self.words])[0]
 
     def __repr__(self):
-        """repr for an instance of sentence.
-
-        >>> sent = Sentence("Hello world!")
-        >>> sent
-        <Sentence words='Hello world!' sentiment=0.0>
-
-        """
         return f"<Sentence words='{truncate(self.words)}' sentiment={self.sentiment}>"
+
+    def lower_and_remove_punc(self):
+        """lower case the words in the sentence and remove all punctuation."""
+        table = str.maketrans('', '', punctuation)
+        return self.words.lower().translate(table)
+
+    def tokenize(self):
+        """convert the words in the sentence to tokens for NLP."""
+        return word_tokenize(self.lower_and_remove_punc())

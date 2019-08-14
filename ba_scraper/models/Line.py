@@ -19,13 +19,6 @@ class Line:
         self.sentences = [Sentence(sent) for sent in sent_tokenize(self.words)]
 
     def __repr__(self):
-        """repr for an instance of line.
-
-        >>> sent = Line("Chris", "Hello caller.")
-        >>> sent
-        <Chris: Hello caller.>
-
-        """
         return f"<{self.speaker}: {truncate(self.words, 100)}>"
 
     def sentiments(self):
