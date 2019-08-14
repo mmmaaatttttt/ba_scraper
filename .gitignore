@@ -1,3 +1,8 @@
 .DS_Store
 venv
 __pycache__
+*.txt
+*.hdf5
+
+# don't ignore episode transcripts
+!episodes/*.txt
