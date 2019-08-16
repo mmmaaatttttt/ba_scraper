@@ -22,8 +22,6 @@ class ConversationList:
             if line.speaker == speaker
         ]
 
-    # write a method to get sentiment scores between a certain range
-
     def ngram_freq(self, speaker, token_count=1):
         """Return a FreqDist of ngrams of length token_count for speaker."""
         freq = FreqDist()
