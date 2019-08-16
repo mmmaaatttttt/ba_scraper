@@ -102,8 +102,10 @@ class Conversation:
             for sent_dict in sent
         ]
         return {
-            "compound_average": mean([sent["compound"] for sent in all_sentiments]),
-            "compound_variance": var([sent["compound"] for sent in all_sentiments])
+            "compound_average":
+            mean([sent["compound"] for sent in all_sentiments]),
+            "compound_variance":
+            var([sent["compound"] for sent in all_sentiments])
         }
 
     def speakers(self):
@@ -118,16 +120,38 @@ class Conversation:
                        if line.speaker == speaker)
         return sum(line.word_count() for line in self.lines)
 
-    def sentiment_summary_json(self):
+    def all_sentiment_json(self):
         return json.dumps({
             "id": self.id,
             "title": self.title,
             "date": self.date,
-            "sentences": [{
+            "sentiment_counts": [{
                 "speaker": line.speaker,
-                "sentiment": line.sentiments()[idx]["compound"],
-                "sentence": sent,
-            } for line in self.lines for idx, sent in enumerate(line.sentences())]
+                "sentiment": sentence.sentiment
+            } for line in self.lines for sentence in line.sentences]
+        })
+
+    def sentiment_count_json(self, min_sentiment=-1, max_sentiment=1):
+        return json.dumps({
+            "id": self.id,
+            "title": self.title,
+            "date": self.date,
+            "sentiment_counts": {
+                "Chris":
+                len([
+                    sentence for line in self.lines
+                    for sentence in line.sentences if line.speaker == "Chris"
+                    and min_sentiment < sentence.sentiment < max_sentiment
+                ]),
+                "Caller":
+                len([
+                    sentence for line in self.lines
+                    for sentence in line.sentences if line.speaker == "Caller"
+                    and min_sentiment < sentence.sentiment < max_sentiment
+                ]),
+                "min_sentiment": min_sentiment,
+                "max_sentiment": max_sentiment
+            }
         })
 
     def word_count_summary_json(self):
@@ -135,8 +159,8 @@ class Conversation:
             "id": self.id,
             "title": self.title,
             "date": self.date,
-            "word_counts": [{
+            "word_counts": {
                 "Chris": self.word_count("Chris"),
                 "Caller": self.word_count("Caller")
-            }]
+            }
         })
