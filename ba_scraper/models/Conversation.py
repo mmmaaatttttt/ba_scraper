@@ -102,15 +102,21 @@ class Conversation:
             for sent_dict in sent
         ]
         return {
-            "compound_average":
-            mean([sent["compound"] for sent in all_sentiments]),
-            "compound_variance":
-            var([sent["compound"] for sent in all_sentiments])
+            "compound_average": mean([sent["compound"] for sent in all_sentiments]),
+            "compound_variance": var([sent["compound"] for sent in all_sentiments])
         }
 
     def speakers(self):
         """Return a set of the names of the speakers in the conversation."""
         return set(line.speaker for line in self.lines)
+
+    def profanity_count(self, speaker=None):
+        """Return a count of the number of sentences with profanity in the conversation.
+        Can optionally pass a speaker to filter the count by."""
+        if speaker:
+            return sum(line.profanity_count() for line in self.lines
+                       if line.speaker == speaker)
+        return sum(line.profanity_count() for line in self.lines)
 
     def word_count(self, speaker=None):
         """Return a count of the number of words in the conversation.
@@ -125,10 +131,8 @@ class Conversation:
             "id": self.id,
             "title": self.title,
             "date": self.date,
-            "sentiment_counts": [{
-                "speaker": line.speaker,
-                "sentiment": sentence.sentiment
-            } for line in self.lines for sentence in line.sentences]
+            "sentiment_counts":
+            [[line.speaker, mean(line.sentiments())] for line in self.lines]
         })
 
     def sentiment_count_json(self, min_sentiment=-1, max_sentiment=1):
@@ -149,8 +153,10 @@ class Conversation:
                     for sentence in line.sentences if line.speaker == "Caller"
                     and min_sentiment < sentence.sentiment < max_sentiment
                 ]),
-                "min_sentiment": min_sentiment,
-                "max_sentiment": max_sentiment
+                "min_sentiment":
+                min_sentiment,
+                "max_sentiment":
+                max_sentiment
             }
         })
 
@@ -162,5 +168,16 @@ class Conversation:
             "word_counts": {
                 "Chris": self.word_count("Chris"),
                 "Caller": self.word_count("Caller")
+            }
+        })
+    
+    def profanity_count_summary_json(self):
+        return json.dumps({
+            "id": self.id,
+            "title": self.title,
+            "date": self.date,
+            "profanity_counts": {
+                "Chris": self.profanity_count("Chris"),
+                "Caller": self.profanity_count("Caller")
             }
         })

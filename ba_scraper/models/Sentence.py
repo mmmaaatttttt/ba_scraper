@@ -37,3 +37,7 @@ class Sentence:
     def tokenize(self):
         """convert the words in the sentence to tokens for NLP."""
         return word_tokenize(self.lower_and_remove_punc())
+    
+    def word_count(self):
+        """Count the words inside of a line."""
+        return len(self.words.replace("...", "").split())

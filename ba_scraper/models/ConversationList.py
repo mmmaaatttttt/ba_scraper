@@ -54,9 +54,31 @@ class ConversationList:
         return Text(cleaned_string.split(" ")).collocation_list()
 
     def classifier_summary(self, speakers, test_size=500):
+        labeled_lines = []
+        for speaker in speakers:
+            labeled_lines.extend(self.all_lines(speaker))
+
+        all_words = [
+            word for line in labeled_lines for sent in line.sentences
+            for word in sent.lower_and_remove_punc().strip().split()
+        ]
+
+        all_bigrams = [
+            " ".join(ngram) for line in labeled_lines
+            for sent in line.sentences
+            for ngram in ngrams(sent.lower_and_remove_punc().strip(), 2)
+        ]
+
+        word_freq = FreqDist(all_words)
+        most_common_words = list(word_freq)[:2000]
+
+        bigram_freq = FreqDist(all_bigrams)
+        most_common_bigrams = list(bigram_freq)[:2000]
+
         def speaker_features(line):
             cleaned_words_list = [
-                sent.lower_and_remove_punc().strip() for sent in line.sentences
+                word for sent in line.sentences
+                for word in sent.lower_and_remove_punc().strip().split()
             ]
             features = {}
             word_freq = FreqDist(cleaned_words_list)
@@ -64,23 +86,32 @@ class ConversationList:
             word_set = set(cleaned_words_list)
             bigram_set = set(
                 [" ".join(ngram) for ngram in ngrams(cleaned_words_list, 2)])
+            avg_sentiment = sum(sent for sent in line.sentiments()) / len(line.sentences)
             features[f"most_common_word={most_freq_word}"] = most_freq_word
             features["first_word"] = cleaned_words_list[0]
-            for word in word_set:
-                features[f"contains_word={word}"] = True
-            for bigram in bigram_set:
-                features[f"contains_bigram={bigram}"] = True
+            features["has_profanity"] = line.profanity_count() > 0
+            features["sentiment_very_negative"] = avg_sentiment < -0.5
+            features["sentiment_negative"] = -0.5 < avg_sentiment < 0.05
+            features["sentiment_neutral"] = -0.05 < avg_sentiment < 0.05
+            features["sentiment_positive"] = 0.05 < avg_sentiment < 0.5
+            features["sentiment_very_positive"] = 0.5 < avg_sentiment
+            features["long_line"] = line.word_count() > 50
+            features["num_repeated_words"] = len(
+                [val for val in word_freq.values() if val > 1])
+            for word in most_common_words:
+                features[f"contains({word})"] = (word in word_set)
+            for bigram in most_common_bigrams:
+                features[f"contains_bigram({bigram})"] = (bigram in bigram_set)
+            features["asks_question"] = ("?" in line.words)
+            features["contains_nyc"] = ("new york city" in word_set)
             return features
 
-        labeled_lines = []
-        for speaker in speakers:
-            labeled_lines.extend(self.all_lines(speaker))
         shuffle(labeled_lines)
         featuresets = [(speaker_features(line), line.speaker.lower())
                        for line in labeled_lines]
         train_set, test_set = featuresets[test_size:], featuresets[:test_size]
         classifier = NaiveBayesClassifier.train(train_set)
-        classifier.show_most_informative_features(20)
+        classifier.show_most_informative_features(50)
         print(accuracy(classifier, test_set))
 
     def write_lines_to_file(self, speaker):

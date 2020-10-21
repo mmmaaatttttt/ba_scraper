@@ -35,7 +35,7 @@ class Line:
 
     def word_count(self):
         """Count the words inside of a line."""
-        return len(self.words.replace("...", "").split())
+        return sum(sent.word_count() for sent in self.sentences)
 
     def sentence_count(self):
         """Count the sentences inside of a line."""
